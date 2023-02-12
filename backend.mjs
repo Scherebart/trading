@@ -2,8 +2,7 @@ import axios from "axios";
 import { writeFile } from "node:fs/promises";
 
 function getChartURL(timestamp) {
-  return `https://charts.finsa.com.au/data/minute/67995/mid?l=3&m=${timestamp}`;
-  // return "https://charts.finsa.com.au/data/minute/67995/mid?l=4";
+  return `https://charts.finsa.com.au/data/minute/67995/mid?l=30&m=${timestamp}`;
 }
 
 async function getChartData(timestamp) {
@@ -21,19 +20,19 @@ async function getChartData(timestamp) {
     return numberOHLC;
   }
 
-  const candleOHLCSeries = [];
+  const OHLCSeries = [];
   for (const candle of candleSeries) {
     const [timestamp, O, H, L, C] = candle.split(",");
-    candleOHLCSeries.push({ timestamp, ...parseSourceOHLC({ O, H, L, C }) });
+    OHLCSeries.push({ timestamp, ...parseSourceOHLC({ O, H, L, C }) });
   }
 
-  const chartData = { timestamp, candleOHLCSeries };
+  const chartData = { timestamp, OHLCSeries };
   return chartData;
 }
 
 (async () => {
   try {
-    const TIMESTAMP = "2023-02-10T13:21";
+    const TIMESTAMP = "2023-02-10T08:56";
     const chartData = await getChartData(TIMESTAMP);
     await writeFile(`chart-data-${TIMESTAMP}.json`, JSON.stringify(chartData));
   } catch (error) {
