@@ -32,7 +32,7 @@ async function getChartData(timestamp) {
 
 (async () => {
   try {
-    const TIMESTAMP = "2023-02-10T08:56";
+    const TIMESTAMP = "2023-02-10T14:40";
     const chartData = await getChartData(TIMESTAMP);
     await writeFile(`chart-data-${TIMESTAMP}.json`, JSON.stringify(chartData));
   } catch (error) {
