@@ -1,0 +1,11 @@
+{
+    "liveServer.settings.port": 3300,
+    "liveServer.settings.NoBrowser": true,
+    "liveServer.settings.ignoreFiles": [
+        ".vscode/**",
+        "nginx/**",
+        "**/*.scss",
+        "**/*.sass",
+        "**/*.ts"
+    ]
+}

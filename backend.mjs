@@ -2,7 +2,7 @@ import axios from "axios";
 import { writeFile } from "node:fs/promises";
 
 function getChartURL(timestamp) {
-  return `https://charts.finsa.com.au/data/minute/67995/mid?l=30&m=${timestamp}`;
+  return `https://charts.finsa.com.au/data/minute/67995/mid?l=300&m=${timestamp}`;
 }
 
 async function getChartData(timestamp) {
@@ -32,7 +32,7 @@ async function getChartData(timestamp) {
 
 (async () => {
   try {
-    const TIMESTAMP = "2023-02-10T14:40";
+    const TIMESTAMP = "2023-02-13T15:06";
     const chartData = await getChartData(TIMESTAMP);
     await writeFile(`chart-data-${TIMESTAMP}.json`, JSON.stringify(chartData));
   } catch (error) {

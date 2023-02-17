@@ -32,14 +32,14 @@ function preload() {
 }
 
 function getChartURL() {
-  return "/chart-data-2023-02-10T14:40.json";
+  return "/chart-data-2023-02-13T15:06.json";
 }
 
 function getChartData() {
-  httpGet(
-    getChartURL(),
+  httpPost(
+    "http://localhost:8080/api/chart",
     "json",
-    false,
+    {},
     (data) => {
       chartData = data;
     },
@@ -166,23 +166,23 @@ function drawTimeScale(candleCount) {
   const yLine = DIM_SCALE_MARGIN + DIM_CANDLE_SERIES_MARGIN;
   const lengthLine = height - 2 * (DIM_SCALE_MARGIN + DIM_CANDLE_SERIES_MARGIN);
 
-  noStroke();
-  textSize(DIM_SCALE_TEXT_HEIGHT);
-  fill(200);
-  for (const { x, timestamp } of xSeries) {
-    const date = new Date(timestamp);
-    text(
+    noStroke();
+    textSize(DIM_SCALE_TEXT_HEIGHT);
+    fill(200);
+    for (const { x, timestamp } of xSeries) {
+      const date = new Date(timestamp);
+      text(
       `${date.getHours()}:${date.getMinutes()}`,
       x - DIM_SCALE_TEXT_HEIGHT,
       yText
-    );
+      );
   }
 
-  stroke(200, 80);
-  strokeWeight(1);
-  drawingContext.setLineDash([1.5, 8]);
-  for (const { x } of xSeries) {
-    line(x, yLine, x, yLine + lengthLine);
+    stroke(200, 80);
+    strokeWeight(1);
+    drawingContext.setLineDash([1.5, 8]);
+    for (const { x } of xSeries) {
+      line(x, yLine, x, yLine + lengthLine);
   }
 }
 

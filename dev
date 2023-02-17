@@ -1,0 +1,14 @@
+#!/bin/bash
+
+set -e
+
+sudo nginx -c /home/bart/Projects/Scherebart/trading/nginx.conf
+
+function cleanup {
+    echo "closing nginx..."
+    sudo kill -s SIGTERM $(cat nginx/nginx.pid)
+}
+
+trap cleanup SIGINT
+
+node server.js
