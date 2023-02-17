@@ -103,7 +103,7 @@ function drawValuesScale(candleCount) {
   const yL = DIM_SCALE_MARGIN + DIM_CANDLE_SERIES_MARGIN;
   const yH = height - (DIM_SCALE_MARGIN + DIM_CANDLE_SERIES_MARGIN);
   const xText = width - DIM_SCALE_MARGIN + DIM_SCALE_TEXT_MARGIN;
-  const xLine = DIM_SCALE_MARGIN + DIM_SCALE_VERTICAL_SPACING / 2;
+  const xLine = DIM_SCALE_MARGIN + DIM_CANDLE_SERIES_MARGIN;
   const lengthLine = width - 2 * (DIM_SCALE_MARGIN + DIM_CANDLE_SERIES_MARGIN);
 
   const denormalizeValue = (y) =>
@@ -115,8 +115,8 @@ function drawValuesScale(candleCount) {
   {
     for (
       let y = yL;
-      y < yH - DIM_SCALE_VERTICAL_SPACING;
-      y += DIM_SCALE_TEXT_HEIGHT + DIM_SCALE_VERTICAL_SPACING
+      y < yH - DIM_SCALE_VALUE_SPACING;
+      y += DIM_SCALE_TEXT_HEIGHT + DIM_SCALE_VALUE_SPACING
     ) {
       ySeries.push(y);
     }
@@ -143,6 +143,9 @@ function drawTimeScale(candleCount) {
 
   const yText =
     height - DIM_SCALE_MARGIN + DIM_SCALE_TEXT_MARGIN + DIM_SCALE_TEXT_HEIGHT;
+  const y2Text = yText + DIM_SCALE_TEXT_MARGIN + DIM_SCALE_TEXT_HEIGHT;
+  const yLine = DIM_SCALE_MARGIN + DIM_CANDLE_SERIES_MARGIN;
+  const lengthLine = height - 2 * (DIM_SCALE_MARGIN + DIM_CANDLE_SERIES_MARGIN);
 
   const xCandle = (i) =>
     width -
@@ -163,26 +166,66 @@ function drawTimeScale(candleCount) {
     timestamp: OHLCSeries[candleCount - 1].timestamp,
   });
 
-  const yLine = DIM_SCALE_MARGIN + DIM_CANDLE_SERIES_MARGIN;
-  const lengthLine = height - 2 * (DIM_SCALE_MARGIN + DIM_CANDLE_SERIES_MARGIN);
-
+  {
     noStroke();
     textSize(DIM_SCALE_TEXT_HEIGHT);
     fill(200);
     for (const { x, timestamp } of xSeries) {
       const date = new Date(timestamp);
-      text(
-      `${date.getHours()}:${date.getMinutes()}`,
-      x - DIM_SCALE_TEXT_HEIGHT,
-      yText
-      );
+      const hours = date.getHours();
+      const minutes = (() => {
+        let minutes = date.getMinutes();
+        if (minutes < 10) {
+          minutes = "0" + minutes;
+        }
+        return minutes;
+      })();
+      text(hours + ":" + minutes, x - DIM_SCALE_TEXT_HEIGHT, yText);
+    }
   }
 
+  {
+    let i = xSeries.length - 1;
+    if (i >= 0) {
+      const date = new Date(xSeries[i].timestamp);
+      let currentYear = date.getFullYear();
+      let currentMonth = date.getMonth();
+      let currentDay = date.getDate();
+      text(
+        currentYear + "/" + currentMonth + "/" + currentDay,
+        xSeries[i].x - DIM_SCALE_TEXT_HEIGHT,
+        y2Text
+      );
+      while (--i >= 0) {
+        const date = new Date(xSeries[i].timestamp);
+        const year = date.getFullYear();
+        const month = date.getMonth();
+        const day = date.getDate();
+
+        let label = null;
+        if (year != currentYear) {
+          label = currentYear + "/" + currentMonth + "/" + currentDay;
+        }
+        if (month != currentMonth) {
+          label = currentMonth + "/" + currentDay;
+        }
+        if (day != currentDay) {
+          label = currentDay;
+        }
+        if (label != null) {
+          text(label, xSeries[i].x - DIM_SCALE_TEXT_HEIGHT, y2Text);
+        }
+      }
+    }
+  }
+
+  {
     stroke(200, 80);
     strokeWeight(1);
     drawingContext.setLineDash([1.5, 8]);
     for (const { x } of xSeries) {
       line(x, yLine, x, yLine + lengthLine);
+    }
   }
 }
 
