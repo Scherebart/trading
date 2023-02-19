@@ -1,5 +1,5 @@
 const DIM_SCALE_MARGIN = 70;
-const DIM_SCALE_VERTICAL_SPACING = 50;
+const DIM_SCALE_VALUE_SPACING = 50;
 const DIM_SCALE_TEXT_HEIGHT = 16;
 const DIM_SCALE_TEXT_MARGIN = 10;
 const DIM_SCALE_TIME_SPACING = 5;
@@ -25,23 +25,29 @@ function setup() {
     width - (DIM_SCALE_MARGIN + DIM_CANDLE_SERIES_MARGIN) * 2,
     height - (DIM_SCALE_MARGIN + DIM_CANDLE_SERIES_MARGIN) * 2
   );
+  noLoop();
+
+  const eventSource = new EventSource(
+    "http://localhost:8080/api/chart-updates"
+  );
+  eventSource.addEventListener("chart-update", (event) => {
+    const timestamp = JSON.parse(event.data);
+    getChartData(timestamp);
+  });
+
+  eventSource.addEventListener("error", (event) => {
+    console.log("Error occurred:", event); // handle errors
+  });
 }
 
-function preload() {
-  getChartData();
-}
-
-function getChartURL() {
-  return "/chart-data-2023-02-13T15:06.json";
-}
-
-function getChartData() {
-  httpPost(
-    "http://localhost:8080/api/chart",
+function getChartData(timestamp) {
+  const url = `http://localhost:8080/api/chart?timestamp=${timestamp}`;
+  httpGet(
+    url,
     "json",
-    {},
     (data) => {
       chartData = data;
+      redraw();
     },
     (error) => {
       console.error(error);
@@ -55,7 +61,6 @@ function draw() {
   if (!chartData) {
     return;
   }
-  noLoop();
 
   background(COLOR_SCALE_BACKGROUND);
 
@@ -237,6 +242,8 @@ function drawTimeScale(candleCount) {
  * @returns
  */
 function drawCandles(layer) {
+  layer.clear();
+
   const { width, height } = layer;
   const { OHLCSeries } = chartData;
 

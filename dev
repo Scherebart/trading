@@ -1,14 +1,14 @@
 #!/bin/bash
 
-set -e
+set -eE
 
 sudo nginx -c /home/bart/Projects/Scherebart/trading/nginx.conf
-
-function cleanup {
+function cleanup_nginx {
     echo "closing nginx..."
-    sudo kill -s SIGTERM $(cat nginx/nginx.pid)
+    sudo kill -TERM $(cat .nginx/pid)
 }
 
-trap cleanup SIGINT
+trap 'echo sigint!' SIGINT
+trap cleanup_nginx ERR
 
 node server.js

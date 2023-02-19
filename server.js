@@ -1,19 +1,28 @@
 const path = require("path");
 const express = require("express");
+const { createSession } = require("better-sse");
+
+const {
+  retrieveChart,
+  updateChart,
+} = require("./backend.js");
 
 const server = express();
 
-server.use((req, res, next) => {
-  console.log("getting a request..");
-  console.log(req.originalUrl);
-  console.log(req.url);
-  next();
+server.get("/chart-updates", async (req, res) => {
+  const session = await createSession(req, res);
+
+  return session.iterate(updateChart(), { eventName: "chart-update" });
 });
 
-server.post("/chart", (req, res) => {
-  console.log("getting a chart...");
-  // res.send({ a: "some chart data" });
-  res.sendFile(path.join(__dirname, "./chart-data-2023-02-13T16:40.json"));
+server.get("/chart", async (req, res) => {
+  const { timestamp } = req.query;
+  if (!timestamp) {
+    return res.status(400).send("Bad Request: timestamp must be defined");
+  }
+
+  const chart = await retrieveChart(timestamp);
+  res.status(200).type("json").send(JSON.stringify(chart));
 });
 
 server.listen(3000, () =>

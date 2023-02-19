@@ -3,7 +3,8 @@
     "liveServer.settings.NoBrowser": true,
     "liveServer.settings.ignoreFiles": [
         ".vscode/**",
-        "nginx/**",
+        ".nginx/**",
+        "charts/**",
         "**/*.scss",
         "**/*.sass",
         "**/*.ts"
