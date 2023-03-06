@@ -1,0 +1,7 @@
+{
+  "knex": {
+    "connection": {
+      "filename": "./db-test.sqlite3"
+    }
+  }
+}

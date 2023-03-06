@@ -1,18 +1,21 @@
 const DIM_SCALE_MARGIN = 70;
 const DIM_SCALE_VALUE_SPACING = 50;
-const DIM_SCALE_TEXT_HEIGHT = 16;
+const DIM_SCALE_TEXT_SIZE = 16;
 const DIM_SCALE_TEXT_MARGIN = 10;
 const DIM_SCALE_TIME_SPACING = 5;
 
 const DIM_CANDLE_SERIES_MARGIN = 25;
-const DIM_CANDLE_WIDTH = 18;
-const DIM_CANDLE_BORDER = 1.2;
-const DIM_CANDLE_DISTANCE = 12;
+const DIM_CANDLE_BORDER = 1;
+const DIM_CANDLE_WIDTH = 10;
+const DIM_CANDLE_DISTANCE = 4;
 
 const COLOR_SCALE_BACKGROUND = 130;
-const COLOR_CANDLE_SERIES_BACKGROUND = 90;
+const COLOR_SCALE_BORDER = 60;
+const COLOR_SCALE_TEXT = 195;
+const COLOR_CANDLE_SERIES_BACKGROUND = 103;
 const COLOR_CANDLE_RED = [150, 65, 65];
 const COLOR_CANDLE_GREEN = [65, 150, 65];
+const COLOR_CANDLE_BORDER = 30;
 
 let candlesLayer = null;
 
@@ -41,7 +44,10 @@ function setup() {
 }
 
 function getChartData(timestamp) {
-  const url = `http://localhost:8080/api/chart?timestamp=${timestamp}`;
+  const highDate = new Date(timestamp);
+  const lowDate = new Date(highDate);
+  lowDate.setHours(lowDate.getHours() - 5);
+  const url = `http://localhost:8080/api/chart?highDate=${highDate.toISOString()}&lowDate=${lowDate.toISOString()}`;
   httpGet(
     url,
     "json",
@@ -64,8 +70,11 @@ function draw() {
 
   background(COLOR_SCALE_BACKGROUND);
 
-  noStroke();
+  smooth();
+  strokeWeight(1);
+  stroke(COLOR_SCALE_BORDER);
   fill(COLOR_CANDLE_SERIES_BACKGROUND);
+  drawingContext.setLineDash([]);
   rect(
     DIM_SCALE_MARGIN,
     DIM_SCALE_MARGIN,
@@ -84,7 +93,7 @@ function draw() {
 }
 
 function findExtremumsFromSeries(candleCount) {
-  const { OHLCSeries } = chartData;
+  const OHLCSeries = chartData;
 
   let min = OHLCSeries[0].L;
   let max = OHLCSeries[0].H;
@@ -108,8 +117,9 @@ function drawValuesScale(candleCount) {
   const yL = DIM_SCALE_MARGIN + DIM_CANDLE_SERIES_MARGIN;
   const yH = height - (DIM_SCALE_MARGIN + DIM_CANDLE_SERIES_MARGIN);
   const xText = width - DIM_SCALE_MARGIN + DIM_SCALE_TEXT_MARGIN;
-  const xLine = DIM_SCALE_MARGIN + DIM_CANDLE_SERIES_MARGIN;
-  const lengthLine = width - 2 * (DIM_SCALE_MARGIN + DIM_CANDLE_SERIES_MARGIN);
+  const xLine = DIM_SCALE_MARGIN + DIM_CANDLE_SERIES_MARGIN / 2;
+  const lengthLine =
+    width - 2 * (DIM_SCALE_MARGIN + DIM_CANDLE_SERIES_MARGIN / 2);
 
   const denormalizeValue = (y) =>
     Number.parseFloat(min + (max - min) * (1 - (y - yL) / (yH - yL))).toFixed(
@@ -121,7 +131,7 @@ function drawValuesScale(candleCount) {
     for (
       let y = yL;
       y < yH - DIM_SCALE_VALUE_SPACING;
-      y += DIM_SCALE_TEXT_HEIGHT + DIM_SCALE_VALUE_SPACING
+      y += DIM_SCALE_TEXT_SIZE + DIM_SCALE_VALUE_SPACING
     ) {
       ySeries.push(y);
     }
@@ -129,10 +139,10 @@ function drawValuesScale(candleCount) {
   }
 
   noStroke();
-  textSize(DIM_SCALE_TEXT_HEIGHT);
-  fill(200);
+  textSize(DIM_SCALE_TEXT_SIZE);
+  fill(COLOR_SCALE_TEXT);
   for (const y of ySeries) {
-    text(denormalizeValue(y), xText, y + DIM_SCALE_TEXT_HEIGHT * 0.3);
+    text(denormalizeValue(y), xText, y + DIM_SCALE_TEXT_SIZE * 0.3);
   }
 
   stroke(200, 80);
@@ -144,13 +154,14 @@ function drawValuesScale(candleCount) {
 }
 
 function drawTimeScale(candleCount) {
-  const { OHLCSeries } = chartData;
+  const OHLCSeries = chartData;
 
   const yText =
-    height - DIM_SCALE_MARGIN + DIM_SCALE_TEXT_MARGIN + DIM_SCALE_TEXT_HEIGHT;
-  const y2Text = yText + DIM_SCALE_TEXT_MARGIN + DIM_SCALE_TEXT_HEIGHT;
-  const yLine = DIM_SCALE_MARGIN + DIM_CANDLE_SERIES_MARGIN;
-  const lengthLine = height - 2 * (DIM_SCALE_MARGIN + DIM_CANDLE_SERIES_MARGIN);
+    height - DIM_SCALE_MARGIN + DIM_SCALE_TEXT_MARGIN + DIM_SCALE_TEXT_SIZE;
+  const y2Text = yText + DIM_SCALE_TEXT_MARGIN + DIM_SCALE_TEXT_SIZE;
+  const yLine = DIM_SCALE_MARGIN + DIM_CANDLE_SERIES_MARGIN / 2;
+  const lengthLine =
+    height - 2 * (DIM_SCALE_MARGIN + DIM_CANDLE_SERIES_MARGIN / 2);
 
   const xCandle = (i) =>
     width -
@@ -173,8 +184,8 @@ function drawTimeScale(candleCount) {
 
   {
     noStroke();
-    textSize(DIM_SCALE_TEXT_HEIGHT);
-    fill(200);
+    textSize(DIM_SCALE_TEXT_SIZE);
+    fill(COLOR_SCALE_TEXT);
     for (const { x, timestamp } of xSeries) {
       const date = new Date(timestamp);
       const hours = date.getHours();
@@ -185,7 +196,7 @@ function drawTimeScale(candleCount) {
         }
         return minutes;
       })();
-      text(hours + ":" + minutes, x - DIM_SCALE_TEXT_HEIGHT, yText);
+      text(hours + ":" + minutes, x - DIM_SCALE_TEXT_SIZE, yText);
     }
   }
 
@@ -194,11 +205,11 @@ function drawTimeScale(candleCount) {
     if (i >= 0) {
       const date = new Date(xSeries[i].timestamp);
       let currentYear = date.getFullYear();
-      let currentMonth = date.getMonth();
+      let currentMonth = date.getMonth()+1;
       let currentDay = date.getDate();
       text(
         currentYear + "/" + currentMonth + "/" + currentDay,
-        xSeries[i].x - DIM_SCALE_TEXT_HEIGHT,
+        xSeries[i].x - DIM_SCALE_TEXT_SIZE,
         y2Text
       );
       while (--i >= 0) {
@@ -218,7 +229,7 @@ function drawTimeScale(candleCount) {
           label = currentDay;
         }
         if (label != null) {
-          text(label, xSeries[i].x - DIM_SCALE_TEXT_HEIGHT, y2Text);
+          text(label, xSeries[i].x - DIM_SCALE_TEXT_SIZE, y2Text);
         }
       }
     }
@@ -245,7 +256,7 @@ function drawCandles(layer) {
   layer.clear();
 
   const { width, height } = layer;
-  const { OHLCSeries } = chartData;
+  const OHLCSeries = chartData;
 
   function calculateCandleCount() {
     let w = width;
@@ -273,6 +284,8 @@ function drawCandles(layer) {
   const { min, max } = findExtremumsFromSeries(candleCount);
 
   const normalizeValue = (value) => height * (1 - (value - min) / (max - min));
+  layer.strokeWeight(DIM_CANDLE_BORDER);
+  layer.stroke(COLOR_CANDLE_BORDER);
   for (let i = 0; i < candleCount; i++) {
     const { O, H, L, C } = OHLCSeries[i];
 
@@ -285,15 +298,16 @@ function drawCandles(layer) {
       width - (i + 1) * DIM_CANDLE_WIDTH - i * DIM_CANDLE_DISTANCE;
 
     layer.strokeWeight(DIM_CANDLE_BORDER);
-    layer.stroke(25);
     layer.fill(C > O ? COLOR_CANDLE_GREEN : COLOR_CANDLE_RED);
+    layer.rect(candleX, y2, DIM_CANDLE_WIDTH, y3 - y2);
+
+    layer.strokeWeight(DIM_CANDLE_BORDER * 1.2);
     layer.line(
       candleX + DIM_CANDLE_WIDTH / 2,
       y1,
       candleX + DIM_CANDLE_WIDTH / 2,
       y2
     );
-    layer.rect(candleX, y2, DIM_CANDLE_WIDTH, y3 - y2);
     layer.line(
       candleX + DIM_CANDLE_WIDTH / 2,
       y3,
