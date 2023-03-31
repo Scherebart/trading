@@ -4,7 +4,75 @@ async function* mapAsyncIterable(asyncIterable, mapFn) {
   }
 }
 
+function transformAllObjectProperties(obj, funcTransform) {
+  for (const key of Object.keys(obj)) {
+    try {
+      obj[key] = funcTransform(obj[key]);
+    } catch (err) {
+      console.log(err);
+      console.log({ [key]: obj[key] });
+      console.log(obj);
+    }
+  }
+
+  return obj;
+}
+
+// function makeQueue() {
+
+//       const items = {}
+//       const frontIndex = 0
+//       const backIndex = 0
+
+//   function enqueue(item) {
+//       this.items[this.backIndex] = item
+//       this.backIndex++
+//       return item + ' inserted'
+//   }
+//   dequeue() {
+//       const item = this.items[this.frontIndex]
+//       delete this.items[this.frontIndex]
+//       this.frontIndex++
+//       return item
+//   }
+//   peek() {
+//       return this.items[this.frontIndex]
+//   }
+//   get printQueue() {
+//       return this.items;
+//   }
+// }
+
+// function initMutex() {
+//   let used = false;
+//   const stack = [];
+
+//   async function obtain() {
+//     return new Promise((notify) => {
+//       if (stack.length === 0) {
+//         used = true;
+//         notify(release);
+//       } else {
+//         stack.push(notify);
+//       }
+//     });
+//   }
+
+//   async function release() {
+//     const firstAwaiter = stack.pop();
+//     if (firstAwaiter) {
+//       firstAwaiter.notify();
+//     }
+//   }
+// }
+
 function localDateToISO(date) {
+  if (date === null || date === undefined) {
+    return null;
+  }
+
+  // console.log(`converting date ${date} to ISO`)
+
   return new Date(date).toISOString();
 }
 
@@ -28,15 +96,30 @@ const makeNullCandle = (date) => ({
   C: null,
 });
 
-async function fillGapsInCandleSeries({
+function trimOrderedTimestampedSeries({ series, highDate, lowDate }) {
+  const res = [];
+
+  for (const item of series) {
+    const itemDate = localDateFromISO(item.timestamp);
+    if (
+      (!highDate || itemDate <= highDate) &&
+      (!lowDate || itemDate >= lowDate)
+    ) {
+      res.push(item);
+    }
+  }
+
+  return res;
+}
+
+async function fillGapsInOrderedTimestampedSeries({
   series,
   highDate,
   lowDate,
   makeFilling,
   persistFilling = () => {},
 }) {
-  const consistentSeries = [];
-
+  console.log("fillGapsInOrderedTimestampedSeries", { highDate, lowDate });
   async function fillGap(highDate, lowDate) {
     if (highDate < lowDate) {
       return;
@@ -47,18 +130,20 @@ async function fillGapsInCandleSeries({
     await persistFilling(filling);
   }
 
+  if (series.length > 0) {
+    if (!highDate) {
+      highDate = localDateFromISO(series[0]);
+    }
+    if (!lowDate) {
+      lowDate = localDateFromISO(series[series.length - 1]);
+    }
+  }
+
+  const consistentSeries = [];
+
   let highGapDate = highDate;
   for (const item of series) {
     const itemDate = localDateFromISO(item.timestamp);
-
-    // skip the head and tail of the series extending beyond the [hightDate, ..., lowDate] range
-    if (itemDate > highDate) {
-      continue;
-    }
-    if (itemDate < lowDate) {
-      break;
-    }
-
     await fillGap(highGapDate, itemDate + 1 * 60 * 1000);
     consistentSeries.push(item);
     highGapDate = itemDate - 1 * 60 * 1000;
@@ -70,9 +155,11 @@ async function fillGapsInCandleSeries({
 
 module.exports = {
   mapAsyncIterable,
+  transformAllObjectProperties,
   localDateFromISO,
   localDateToISO,
   generateDateRange,
   makeNullCandle,
-  fillGapsInCandleSeries,
+  trimOrderedTimestampedSeries,
+  fillGapsInOrderedTimestampedSeries,
 };

@@ -27,8 +27,14 @@ liveReloadServer.server.once("connection", () => {
   server.use(express.static(path.join(__dirname, "public")));
 
   server.get("/api/chart-updates", async (req, res) => {
+    req.socket.on('close',function(){
+      console.log('interrupted chart update via socket!')
+    })
+    req.connection.on('close',function(){
+      console.log('interrupted chart update via connection!')
+    })
+    
     const session = await createSession(req, res);
-
     return session.iterate(mapAsyncIterable(updateChart(db), localDateToISO), {
       eventName: "chart-update",
     });
@@ -41,6 +47,13 @@ liveReloadServer.server.once("connection", () => {
         .status(400)
         .send("Bad Request: both endDate and startDate must be defined");
     }
+
+    req.socket.on('close',function(){
+      console.log('interrupted chart get via socket!')
+    })
+    req.connection.on('close',function(){
+      console.log('interrupted chart get via connection!')
+    })
 
     const chart = await loadChart(
       db,

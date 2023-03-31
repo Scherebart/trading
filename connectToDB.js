@@ -20,6 +20,10 @@ module.exports = async () => {
     async startTransaction() {
       transaction = await connection.transaction();
     },
+    async commitTransaction() {
+      await transaction.commit();
+      transaction = null;
+    },
     async rollbackTransaction() {
       await transaction.rollback();
       transaction = null;

@@ -1,16 +1,24 @@
-const CLOCK_MULT = 5;
-const CLOCK_TRANS = 0;
-const CLOCK_TIME_ZERO = "2023-02-24T13:31Z";
+const LIVE = true;
+
+const CLOCK_MULT = 1;
+const CLOCK_TRANS = null;
+const CLOCK_TIME_ZERO = null; // "2023-02-24T13:31Z";
 
 module.exports = function getClock() {
   const dateStart = Date.now();
+
   const dateDiff = CLOCK_TIME_ZERO
     ? new Date(CLOCK_TIME_ZERO) - dateStart
-    : CLOCK_TRANS * 1000;
+    : CLOCK_TRANS
+    ? CLOCK_TRANS * 1000
+    : 0;
 
   function currentDate() {
-    let date = new Date();
+    if (LIVE) {
+      return Date.now();
+    }
 
+    let date = new Date();
     date = new Date(dateStart + (Date.now() - dateStart) * CLOCK_MULT);
     date = new Date(date.getTime() + dateDiff);
 
@@ -18,24 +26,24 @@ module.exports = function getClock() {
   }
 
   function getLastMinutePassed() {
-    const date = new Date(currentDate());
+    const date = new Date(currentDate() - 1 * 60 * 1000);
     date.setSeconds(0);
     date.setMilliseconds(0);
-  
+
     return date.getTime();
   }
 
-  async function awaitUntil(targetUnixTime) {
+  async function awaitUntil(nextMinuteToPass) {
     return new Promise((res) =>
       setTimeout(
-        () => res(targetUnixTime),
-        (targetUnixTime - currentDate()) / CLOCK_MULT
+        () => res(nextMinuteToPass),
+        (nextMinuteToPass + 1 * 60 * 1000 - currentDate()) / CLOCK_MULT
       )
     );
   }
 
   let lastMinuteAwaited = null;
-  async function awaitNextMinute() {
+  async function awaitNextMinute(additionalDelay) {
     const lastMinutePassed = getLastMinutePassed();
 
     if (lastMinuteAwaited) {
@@ -43,7 +51,7 @@ module.exports = function getClock() {
         lastMinuteAwaited = lastMinutePassed;
       } else {
         lastMinuteAwaited = lastMinutePassed + 1 * 60 * 1000;
-        await awaitUntil(lastMinuteAwaited + 200);
+        await awaitUntil(lastMinuteAwaited + additionalDelay);
       }
     } else {
       lastMinuteAwaited = lastMinutePassed;
@@ -54,5 +62,7 @@ module.exports = function getClock() {
 
   return {
     awaitNextMinute,
+    currentDate,
+    getLastMinutePassed
   };
 };

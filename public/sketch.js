@@ -6,8 +6,8 @@ const DIM_SCALE_TIME_SPACING = 5;
 
 const DIM_CANDLE_SERIES_MARGIN = 25;
 const DIM_CANDLE_BORDER = 1;
-const DIM_CANDLE_WIDTH = 10;
-const DIM_CANDLE_DISTANCE = 4;
+const DIM_CANDLE_WIDTH = 14;
+const DIM_CANDLE_DISTANCE = 5;
 
 const COLOR_SCALE_BACKGROUND = 130;
 const COLOR_SCALE_BORDER = 60;
@@ -46,7 +46,8 @@ function setup() {
 function getChartData(timestamp) {
   const highDate = new Date(timestamp);
   const lowDate = new Date(highDate);
-  lowDate.setHours(lowDate.getHours() - 5);
+  lowDate.setMinutes(lowDate.getMinutes() - 155);
+  // lowDate.setHours(lowDate.getHours() - 5);
   const url = `http://localhost:8080/api/chart?highDate=${highDate.toISOString()}&lowDate=${lowDate.toISOString()}`;
   httpGet(
     url,
@@ -205,7 +206,7 @@ function drawTimeScale(candleCount) {
     if (i >= 0) {
       const date = new Date(xSeries[i].timestamp);
       let currentYear = date.getFullYear();
-      let currentMonth = date.getMonth()+1;
+      let currentMonth = date.getMonth() + 1;
       let currentDay = date.getDate();
       text(
         currentYear + "/" + currentMonth + "/" + currentDay,
@@ -215,7 +216,7 @@ function drawTimeScale(candleCount) {
       while (--i >= 0) {
         const date = new Date(xSeries[i].timestamp);
         const year = date.getFullYear();
-        const month = date.getMonth();
+        const month = date.getMonth() + 1;
         const day = date.getDate();
 
         let label = null;

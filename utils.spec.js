@@ -1,11 +1,11 @@
 const {
-  fillGapsInCandleSeries,
+  fillGapsInOrderedTimestampedSeries,
   generateDateRange,
   makeNullCandle,
 } = require("./utils");
 
-describe("fillGapsInCandleSeries", () => {
-  test("fillGapsInCandleSeries", async () => {
+describe("fillGapsInOrderedTimestampedSeries", () => {
+  test("fillGapsInOrderedTimestampedSeries", async () => {
     const series = [
       "2023-12-26T13:51:00.000Z",
       "2023-12-26T13:49:00.000Z",
@@ -17,7 +17,7 @@ describe("fillGapsInCandleSeries", () => {
     const makeFilling = (highDate, lowDate) =>
       Array.from(generateDateRange(highDate, lowDate)).map(makeNullCandle);
     const persistFilling = jest.fn();
-    const consistentSeries = await fillGapsInCandleSeries({
+    const consistentSeries = await fillGapsInOrderedTimestampedSeries({
       series,
       highDate: new Date("2023-12-26T13:50Z").getTime(),
       lowDate: new Date("2023-12-26T13:44Z").getTime(),
