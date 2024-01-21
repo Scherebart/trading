@@ -30,24 +30,27 @@ function setup() {
   );
   noLoop();
 
-  const eventSource = new EventSource(
-    "http://localhost:8080/api/chart-updates"
-  );
-  eventSource.addEventListener("chart-update", (event) => {
-    const timestamp = JSON.parse(event.data);
-    getChartData(timestamp);
-  });
+  getChartFromBroker()
+  redraw()
+}
 
-  eventSource.addEventListener("error", (event) => {
-    console.log("Error occurred:", event); // handle errors
-  });
+async function getChartFromBroker() {
+  const fullQueryURL = `/api/chart?${new URLSearchParams({ length: 500, highDate: new Date().toISOString() })}`
+  
+  const res = await fetch(fullQueryURL)
+  if (!res.ok) {
+    console.error(`Could not get data, http status ${res.status}`)
+  }
+
+  const candleSeries = await res.json()
+  chartData = candleSeries
 }
 
 function getChartData(timestamp) {
   const highDate = new Date(timestamp);
   const lowDate = new Date(highDate);
   lowDate.setHours(lowDate.getHours() - 5);
-  const url = `http://localhost:8080/api/chart?highDate=${highDate.toISOString()}&lowDate=${lowDate.toISOString()}`;
+  const url = `/api/chart?highDate=${highDate.toISOString()}&lowDate=${lowDate.toISOString()}`;
   httpGet(
     url,
     "json",

@@ -1,6 +1,6 @@
 const CLOCK_MULT = 5;
 const CLOCK_TRANS = 0;
-const CLOCK_TIME_ZERO = "2023-02-24T13:31Z";
+const CLOCK_TIME_ZERO = "2024-01-19T13:31Z";
 
 module.exports = function getClock() {
   const dateStart = Date.now();

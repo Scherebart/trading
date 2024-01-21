@@ -34,20 +34,41 @@ liveReloadServer.server.once("connection", () => {
     });
   });
 
+  const parseAndLimitPrecision = (numberInText) =>
+    Number.parseFloat(Number.parseFloat(numberInText).toFixed(2));
+
   server.get("/api/chart", async (req, res) => {
-    const { highDate, lowDate } = req.query;
-    if (!highDate || !lowDate) {
+    const { highDate, length } = req.query;
+    if (!highDate || !length) {
       return res
         .status(400)
-        .send("Bad Request: both endDate and startDate must be defined");
+        .send("Bad Request: both highDate and length parameters must be given");
     }
 
-    const chart = await loadChart(
-      db,
-      localDateFromISO(highDate),
-      localDateFromISO(lowDate)
-    );
-    res.status(200).type("json").send(JSON.stringify(chart));
+    const brokerURL = "https://charts.finsatechnology.com/data/minute/67995/mid"
+    const params = {
+      m: highDate,
+      l: length
+    }
+    const getUrlString = brokerURL + '?' + new URLSearchParams(params)
+    const brokerRes = await fetch(getUrlString)
+    if (!brokerRes.ok) {
+      console.error(`could not reach the broker data, status: ${res.status}`)
+      return res.status(500)
+    }
+
+    const candleSeries = (await brokerRes.json()).data.map((candle) => {
+      const [timestamp, O, H, L, C] = candle.split(",");
+
+      return {
+        timestamp: localDateToISO(new Date(timestamp).getTime()),
+        O: parseAndLimitPrecision(O),
+        H: parseAndLimitPrecision(H),
+        L: parseAndLimitPrecision(L),
+        C: parseAndLimitPrecision(C),
+      };
+    })
+    res.status(200).type("json").send(JSON.stringify(candleSeries));
   });
 
   server.listen(8080, () =>
