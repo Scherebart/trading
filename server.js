@@ -3,6 +3,7 @@ const express = require("express");
 const { createSession } = require("better-sse");
 const liveReload = require("livereload");
 const connectLiveReload = require("connect-livereload");
+const fetch = require("node-fetch")
 
 const connectToDB = require("./connectToDB");
 const { updateChart, loadChart } = require("./backendService.js");
@@ -39,23 +40,32 @@ liveReloadServer.server.once("connection", () => {
 
   server.get("/api/chart", async (req, res) => {
     const { highDate, length } = req.query;
-    if (!highDate || !length) {
+    if ( !length) {
       return res
         .status(400)
-        .send("Bad Request: both highDate and length parameters must be given");
+        .send("Bad Request: The length parameter must be given");
     }
 
     const brokerURL = "https://charts.finsatechnology.com/data/minute/67995/mid"
     const params = {
-      m: highDate,
-      l: length
+      l: length,
+      ...(highDate && { m: highDate })
     }
     const getUrlString = brokerURL + '?' + new URLSearchParams(params)
-    const brokerRes = await fetch(getUrlString)
-    if (!brokerRes.ok) {
-      console.error(`could not reach the broker data, status: ${res.status}`)
-      return res.status(500)
+    console.debug({ getUrlString })
+    let brokerRes
+    const brokerResStatuses = []
+    let attemptsLeft = 10
+    do {
+      brokerRes = await fetch(getUrlString)
+      brokerResStatuses.push(brokerRes.status)
+      attemptsLeft -= 1
+    } while(!brokerRes.ok && attemptsLeft > 0)
+    if(!brokerRes.ok) {
+      console.error(`could not reach the broker data, statuses: ${brokerResStatuses}`)
+      return res.status(500).send()
     }
+    console.log(`Reached the broker data with ${attemptsLeft} attempts left`)
 
     const candleSeries = (await brokerRes.json()).data.map((candle) => {
       const [timestamp, O, H, L, C] = candle.split(",");
@@ -68,7 +78,8 @@ liveReloadServer.server.once("connection", () => {
         C: parseAndLimitPrecision(C),
       };
     })
-    res.status(200).type("json").send(JSON.stringify(candleSeries));
+    const responseBody = { candleSeries }
+    res.status(200).type("json").send(JSON.stringify(responseBody));
   });
 
   server.listen(8080, () =>

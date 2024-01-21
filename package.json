@@ -2,6 +2,7 @@
   "name": "trading",
   "scripts": {
     "dev": "nodemon server.js",
+    "debug": "nodemon --inspect=4224 server.js",
     "test": "NODE_ENV=test jest --verbose --colors 2>&1"
   },
   "nodemonConfig": {

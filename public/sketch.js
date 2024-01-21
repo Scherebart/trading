@@ -10,14 +10,20 @@ const DIM_CANDLE_WIDTH = 10;
 const DIM_CANDLE_DISTANCE = 4;
 
 const COLOR_SCALE_BACKGROUND = 130;
+const COLOR_CANDLE_SERIES_BACKGROUND = 103;
 const COLOR_SCALE_BORDER = 60;
 const COLOR_SCALE_TEXT = 195;
-const COLOR_CANDLE_SERIES_BACKGROUND = 103;
 const COLOR_CANDLE_RED = [150, 65, 65];
 const COLOR_CANDLE_GREEN = [65, 150, 65];
 const COLOR_CANDLE_BORDER = 30;
 
 let candlesLayer = null;
+let chartData = null;
+
+function preload() {
+  chartData = loadJSON(`/api/chart?${new URLSearchParams({ length: 500 })}`)
+  console.log({chartData})
+}
 
 function setup() {
   // Subtracted that 1 to quickly overcome some strangely inconsistent behaviour in brave vs chrome
@@ -28,45 +34,12 @@ function setup() {
     width - (DIM_SCALE_MARGIN + DIM_CANDLE_SERIES_MARGIN) * 2,
     height - (DIM_SCALE_MARGIN + DIM_CANDLE_SERIES_MARGIN) * 2
   );
+  textFont('ubuntu');
   noLoop();
-
-  getChartFromBroker()
-  redraw()
 }
-
-async function getChartFromBroker() {
-  const fullQueryURL = `/api/chart?${new URLSearchParams({ length: 500, highDate: new Date().toISOString() })}`
-  
-  const res = await fetch(fullQueryURL)
-  if (!res.ok) {
-    console.error(`Could not get data, http status ${res.status}`)
-  }
-
-  const candleSeries = await res.json()
-  chartData = candleSeries
-}
-
-function getChartData(timestamp) {
-  const highDate = new Date(timestamp);
-  const lowDate = new Date(highDate);
-  lowDate.setHours(lowDate.getHours() - 5);
-  const url = `/api/chart?highDate=${highDate.toISOString()}&lowDate=${lowDate.toISOString()}`;
-  httpGet(
-    url,
-    "json",
-    (data) => {
-      chartData = data;
-      redraw();
-    },
-    (error) => {
-      console.error(error);
-    }
-  );
-}
-
-let chartData = null;
 
 function draw() {
+  console.log({chartData})
   if (!chartData) {
     return;
   }
@@ -96,12 +69,12 @@ function draw() {
 }
 
 function findExtremumsFromSeries(candleCount) {
-  const OHLCSeries = chartData;
+  const { candleSeries } = chartData;
 
-  let min = OHLCSeries[0].L;
-  let max = OHLCSeries[0].H;
+  let min = candleSeries[0].L;
+  let max = candleSeries[0].H;
   let i = 0;
-  for (const { H, L } of OHLCSeries) {
+  for (const { H, L } of candleSeries) {
     if (i >= candleCount) {
       break;
     }
@@ -157,7 +130,7 @@ function drawValuesScale(candleCount) {
 }
 
 function drawTimeScale(candleCount) {
-  const OHLCSeries = chartData;
+  const { candleSeries } = chartData;
 
   const yText =
     height - DIM_SCALE_MARGIN + DIM_SCALE_TEXT_MARGIN + DIM_SCALE_TEXT_SIZE;
@@ -178,11 +151,11 @@ function drawTimeScale(candleCount) {
     i < candleCount - DIM_SCALE_TIME_SPACING;
     i += DIM_SCALE_TIME_SPACING
   ) {
-    xSeries.push({ x: xCandle(i), timestamp: OHLCSeries[i].timestamp });
+    xSeries.push({ x: xCandle(i), timestamp: candleSeries[i].timestamp });
   }
   xSeries.push({
     x: xCandle(candleCount - 1),
-    timestamp: OHLCSeries[candleCount - 1].timestamp,
+    timestamp: candleSeries[candleCount - 1].timestamp,
   });
 
   {
@@ -232,7 +205,8 @@ function drawTimeScale(candleCount) {
           label = currentDay;
         }
         if (label != null) {
-          text(label, xSeries[i].x - DIM_SCALE_TEXT_SIZE, y2Text);
+          // strokeWeight(0.1)
+          text(label, 25+ xSeries[i].x - DIM_SCALE_TEXT_SIZE, y2Text);
         }
       }
     }
@@ -259,7 +233,7 @@ function drawCandles(layer) {
   layer.clear();
 
   const { width, height } = layer;
-  const OHLCSeries = chartData;
+  const { candleSeries } = chartData;
 
   function calculateCandleCount() {
     let w = width;
@@ -273,8 +247,8 @@ function drawCandles(layer) {
 
     candleCount += floor(w / (DIM_CANDLE_WIDTH + DIM_CANDLE_DISTANCE));
 
-    if (OHLCSeries.length < candleCount) {
-      candleCount = OHLCSeries.length;
+    if (candleSeries.length < candleCount) {
+      candleCount = candleSeries.length;
     }
 
     return candleCount;
@@ -290,7 +264,7 @@ function drawCandles(layer) {
   layer.strokeWeight(DIM_CANDLE_BORDER);
   layer.stroke(COLOR_CANDLE_BORDER);
   for (let i = 0; i < candleCount; i++) {
-    const { O, H, L, C } = OHLCSeries[i];
+    const { O, H, L, C } = candleSeries[i];
 
     const y1 = normalizeValue(H);
     const y2 = normalizeValue(C > O ? C : O);
