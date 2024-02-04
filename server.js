@@ -39,8 +39,8 @@ liveReloadServer.server.once("connection", () => {
     Number.parseFloat(Number.parseFloat(numberInText).toFixed(2));
 
   server.get("/api/chart", async (req, res) => {
-    const { highDate, length } = req.query;
-    if ( !length) {
+    const { timestamp, candlesToLoad } = req.query;
+    if (!candlesToLoad) {
       return res
         .status(400)
         .send("Bad Request: The length parameter must be given");
@@ -48,21 +48,26 @@ liveReloadServer.server.once("connection", () => {
 
     const brokerURL = "https://charts.finsatechnology.com/data/minute/67995/mid"
     const params = {
-      l: length,
-      ...(highDate && { m: highDate })
+      l: candlesToLoad,
+      ...(timestamp && { m: timestamp })
     }
     const getUrlString = brokerURL + '?' + new URLSearchParams(params)
     console.debug({ getUrlString })
-    let brokerRes
+    let brokerRes = null
     const brokerResStatuses = []
     let attemptsLeft = 10
     do {
-      brokerRes = await fetch(getUrlString)
-      brokerResStatuses.push(brokerRes.status)
-      attemptsLeft -= 1
-    } while(!brokerRes.ok && attemptsLeft > 0)
-    if(!brokerRes.ok) {
-      console.error(`could not reach the broker data, statuses: ${brokerResStatuses}`)
+      try {
+        attemptsLeft -= 1
+        brokerRes = await fetch(getUrlString)
+        brokerResStatuses.push(brokerRes.status)
+      } catch(e) {
+        brokerRes = null
+        brokerResStatuses. push(e.message)
+      }
+    } while((!brokerRes || !brokerRes.ok) && attemptsLeft > 0)
+    if (!brokerRes || !brokerRes.ok) {
+      console.error(`could not reach the broker data, statuses:\n${brokerResStatuses.join("\n")}`)
       return res.status(500).send()
     }
     console.log(`Reached the broker data with ${attemptsLeft} attempts left`)
@@ -78,6 +83,17 @@ liveReloadServer.server.once("connection", () => {
         C: parseAndLimitPrecision(C),
       };
     })
+    
+    // remove the recent minute unfinished candle
+    const timeNow = new Date()
+    timeNow.setSeconds(0)
+    timeNow.setMilliseconds(0)
+    let i = 0
+    if (candleSeries[i] && new Date(candleSeries[i].timestamp) >= timeNow) {
+      i += 1
+    }
+    candleSeries.splice(0, i)
+
     const responseBody = { candleSeries }
     res.status(200).type("json").send(JSON.stringify(responseBody));
   });
